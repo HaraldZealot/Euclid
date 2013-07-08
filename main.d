@@ -1,3 +1,4 @@
+module euclid;
 import std.stdio;
 
 void main()
@@ -16,11 +17,11 @@ T gcd(T)(T a, T b)
       auto c=a%b;
       a=b;
       b=c;
-   };
+   }
    return b;
 }
 
-long lcm(long a, long b)
+T lcm(T)(T a, T b)
 {
    return a*(b/gcd(a,b));
 }
