@@ -8,14 +8,19 @@ void main()
    readf(" %s %s",&a,&b);
    writeln("gcd(",a,", ",b,") = ",gcd(a,b));
    writeln("lcm(",a,", ",b,") = ",lcm(a,b)); */
+   writeln(0.0," = ", ChainFraction!int(0.0));
+   writeln(real.infinity," = ", ChainFraction!int(real.infinity));
+   writeln(-real.infinity," = ", ChainFraction!int(-real.infinity));
+   writeln(real.nan," = ", ChainFraction!int(real.nan));
    writeln(0.5," = ", ChainFraction!int(0.5));
-   writeln(1.5e3," = ", ChainFraction!long(1.5e3));
+   writeln(1.5e19," = ", ChainFraction!long(1.5e19));
+   writeln(-1.6," = ", ChainFraction!int(-1.6));
    writeln(1.6," = ", ChainFraction!int(1.6));
    //writeln(0.3," = ", ChainFraction!int(0.3));
    writeln(0.335," = ", ChainFraction!long(0.335));
    //writeln(0.5+real.epsilon," = ",ChainFraction!long(0.5+real.epsilon));
    //writeln(real.epsilon," = ",ChainFraction!long(real.epsilon));
-   writeln(0x9.123456789abcd24P-4," = ",ChainFraction!long(0x9.123456789abcd24P-4));
+   writeln(-0x9.123456789abcd24P-4," = ",ChainFraction!long(-0x9.123456789abcd24P-4));
    writeln(0x9.123456789abcd26P-4," = ",ChainFraction!long(0x9.123456789abcd26P-4));
    writeln(0x9.123456789abcd28P-4," = ",ChainFraction!long(0x9.123456789abcd28P-4));
    //writeln(0x1.23456789abcdef5p-4," = ",ChainFraction!long(0x1.23456789abcdef5p-4));
@@ -48,9 +53,26 @@ struct ChainFraction(T)
 {
     this(real number)
     {
+	
 	writeln("\n\n\n");
+	//writefln("num = %.20a",number);
+	if(isNaN(number))
+	{
+	    denominanator_ = 0;
+	    return;
+	}
+	byte sign = cast(byte)signbit(number);
+	scope(exit)if(sign) denominanator_=-denominanator_;
+	if(sign)number=copysign(number,1.0);
+	//writefln("num = %.20a",number);
+	if(number>Unsigned!T.max)
+	{
+	    numerator_ = sign?cast(Unsigned!T)-1:1;
+	    denominanator_ = 0;
+	    return;
+	}
 	auto immutable antieps = cast(ulong)1.0/(number.epsilon*2);
-	//writefln("\n\nnumber = %.20g\nnumber = %.20a",number,number);
+	writeln("antieps = ",antieps);
 	int expn;
 	auto mantissa = frexp(number, expn);
 	ulong mnt = cast(ulong) ldexp(mantissa,64);
@@ -62,12 +84,12 @@ struct ChainFraction(T)
 	ulong base = 1UL << 63;
 	if(expn>0)
 	    base>>=expn;
+	
 	writefln("bas =    %x",base);
 	ulong gcdValue = gcd(base,mnt);
 	ulong Q = base / gcdValue;
 	ulong P = mnt  / gcdValue;
 	integral_=cast(T)(P/Q<T.max?P/Q:T.max);
-	//{auto temp=P%Q;P=Q;Q=temp;}
 	P%=Q;
 	
 	writefln("P =    %x",P);
@@ -78,27 +100,19 @@ struct ChainFraction(T)
 		    qCur = 1;
 	ulong a=1;
 	ulong b;
-	
-	//real sum = 0.0, sumSq = 0.0;
-	int n=1;
+	if(P){
 	do
 	{
 	    a = Q / P;
 	    b = Q % P;
 	    Q = P;
 	    P = b;
-	    //writefln("a[%02d] =    %d,\tb = %d",n, a, b);
-	    //writefln("num = %d",cast(long)(pPre*qCur-pCur*qPre));
-	   // writefln("treshold = %.0f",(antieps/qCur)/qCur);
-	    //sum+=a;
-	    //sumSq+=a*a;
-	    //writefln("<a>  = %g,\ts(a) = %g",sum/n,sqrt((sumSq-sum^^2/n)/(n-1)));
 	    /*
 	    writeln("pPre ", pPre);
 	    writeln("pCur ", pCur);
 	    writeln("qPre ", qPre);
 	    writeln("qCur ", qCur);//*/
-	    if(a>=(antieps/qCur)/qCur || a>=(Unsigned!T.max-qPre)/qCur) break;
+	    if(a>=(antieps/qCur)/qCur || a>=(T.max-qPre)/qCur) break;
 	    auto temp = pCur;
 	    pCur = cast(T) (a * pCur + pPre);
 	    pPre = temp;
@@ -106,29 +120,37 @@ struct ChainFraction(T)
 	    temp = qCur;
 	    qCur = cast(T) (a * qCur + qPre);
 	    qPre = temp;
-	    
-	    ++n;
-	  //  writeln("x ",x);
 	}
 	while(b);
+	numerator_ = pCur;
+	denominanator_ = qCur; 
+	}
+	else{
+	    numerator_ = cast(Unsigned!T)P;
+	    denominanator_ = cast(Unsigned!T)Q;
+	}
 	/*
 	writeln("pPre ", pPre);
 	    writeln("pCur ", pCur);
 	    writeln("qPre ", qPre);
 	    writeln("qCur ", qCur);//*/
-	numerator_ = pCur;
-	denominanator_ = qCur; 
-	writefln("number = %.20a",mantissa);
-	writefln("result = %.20a",cast(real)pCur/cast(real)qCur);
+	
+	writefln("number = %.20a",number);
+	writefln("result = %.20a",sgn(denominanator_)*(cast(real)integral_+cast(real)numerator_/cast(real)abs(denominanator_)));
     }
     
     string toString()
     {
-	return to!string(integral_) ~ " : " ~ to!string(numerator_) ~ " / " ~ to!string(denominanator_);
+	if(!denominanator_)
+	    if(numerator_)
+		return numerator_>1?"-inf":"inf";
+	    else
+		return "nan";
+	return (denominanator_<0?"-":"") ~ to!string(integral_) ~ " : " ~ to!string(numerator_) ~ " / " ~ to!string(abs(denominanator_));
     }
     private:
-	T 		integral_=0;
-	Unsigned!T	numerator_=0,
-			denominanator_=1;
+	Unsigned!T 	integral_=0;
+	Unsigned!T	numerator_=0;
+	T		denominanator_=1;
 }
 
