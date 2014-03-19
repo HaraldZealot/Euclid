@@ -1,15 +1,31 @@
 #Makefile for Euclid project
 NAME = Euclid
 TARGET = debug
-OBJ = obj/$(TARGET)
+SOURCES = main.d
+OBJECTS = $(OBJDIR)/$(SOURCES:.d=.o)
+UNITTESTS = unittests/$(SOURCES:.d=.ut)
+BINDIR = bin/$(TARGET)
+OBJDIR = obj/$(TARGET)
 DC = ldc2
-DFLAGS = -g -O3 -d-debug -od=$(OBJ) 
+DFLAGS = -g -d-debug  -od=$(OBJDIR)
 
+all: $(BINDIR)/$(NAME)
 
+$(BINDIR)/$(NAME): $(OBJECTS)
+	mkdir -p $(BINDIR)
+	$(DC) $(DFLAGS) -of=$(BINDIR)/$(NAME) $(OBJECTS)
 
-all: main.o
-	$(DC) $(DFLAGS) -of=bin/$(TARGET)/$(NAME) $(OBJ)/main.o
-main.o: main.d
-	$(DC) $(DFLAGS) -c main.d
+run: $(BINDIR)/$(NAME)
+	./$(BINDIR)/$(NAME)
+
+unittests: $(UNITTESTS)
+	./$<
+
+unittests/%.ut: %.d
+	$(DC) -unittest -od=obj/unittest -oq -of=$@ $<
+
+$(OBJDIR)/%.o: %.d
+	$(DC) $(DFLAGS)  -c $<
+
 clean:
-	$(RM) obj/$(TARGET)/* bin/$(TARGET)/*
+	rm -rf obj/ bin/

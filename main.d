@@ -33,6 +33,7 @@ void main()
 }
 
 T gcd(T)(T a, T b)
+  if(isIntegral!T)
 {
    if(!b)return a;
    while(a%b)
@@ -45,6 +46,7 @@ T gcd(T)(T a, T b)
 }
 
 T lcm(T)(T a, T b)
+  if(isIntegral!T)
 {
    return a*(b/gcd(a,b));
 }
