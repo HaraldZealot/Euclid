@@ -1,0 +1,192 @@
+//module euclidnumber.d;
+
+private
+{
+	import std.traits;
+	import std.conv;
+}
+
+alias Euclidnumber!ulong deuclid;
+alias Euclidnumber!uint seuclid;
+
+struct Euclidnumber(T)
+	if(is(T == ulong) || is(T == uint))
+{
+public:
+
+	/** Default copy procedure */
+	/** Default assign operator */
+	
+	/** Aliases for frequent type */
+	alias Signed!(Halfbytes!T) IntegralPartType;
+	alias Quarterbytes!T FractionsPartType;
+	
+	/** Not a number represents as 0:0/0 */
+	static @property Euclidnumber!T nan() pure nothrow @safe
+	{
+		return Euclidnumber!T(0, nanRepresentation);
+	}
+	
+	/** Positive infinity represents as +1:0/0 */
+	static @property Euclidnumber!T infinity() pure nothrow @safe
+	{
+		return Euclidnumber!T(0, posInfRepresentation);
+	}
+	
+	/** Negative infinity represents as -1:0/0 */
+	static @property Euclidnumber!T negInfinity() pure nothrow @safe
+	{
+		return Euclidnumber!T(0, negInfRepresentation);
+	}
+	
+	/** Zero represents as 0:0/1 */
+	static @property Euclidnumber!T zero() pure nothrow @safe
+	{
+		return Euclidnumber!T(0, zeroRepresentation);
+	}
+	
+	/** Maximum represents as max:max-1/max */
+	static @property Euclidnumber!T max() pure nothrow @safe
+	{
+		return Euclidnumber!T(0, maxRepresentation);
+	}
+	
+	/** Minimum represents as min:max-1/max */
+	static @property Euclidnumber!T min() pure nothrow @safe
+	{
+		return Euclidnumber!T(0, minRepresentation);
+	}
+	
+	private this(bool, T representation) pure nothrow @safe
+	{
+		this.representation = representation;
+	}
+	
+	/*this(U)(U integral)
+		if(isIntegral!U)
+	{
+		if(integral > IntegralPartType.max)
+			representation = posInfRepresentation;
+		else if(integral < IntegralPartType.min)
+			representation = negInfRepresentation;
+		else 
+		{
+			representation = cast(T)(cast(IntegralPartType)integral) << integralShift | zeroRepresentation;
+		}		
+	}*/
+	
+	string toString() const
+	{
+		if(representation == nanRepresentation)
+			return "nan";
+		else if(representation == posInfRepresentation)
+			return "+inf";
+		else if(representation == negInfRepresentation)
+			return "-inf";
+		
+		auto result = to!string(cast(Signed!T)(representation & integralMask) >> integralShift); // N.B! arithmetical integralShift
+		if(representation & numeratorMask)
+		{
+			result ~= ":";
+			result ~= to!string((representation & numeratorMask) >>> numeratorShift) ~ "/"; // N.B! logical shift
+			result ~= to!string(representation & denominatorMask);
+		}
+		
+		return result;
+	}
+	
+private:
+	T representation;
+	
+	enum bitsInByte = 8;
+	enum bitsInDenominator = FractionsPartType.sizeof * bitsInByte;
+	enum bitsInNumerator = FractionsPartType.sizeof * bitsInByte;
+	enum bitsInFraction = bitsInDenominator + bitsInNumerator;
+	enum bitsInIntegral = IntegralPartType.sizeof * bitsInByte;
+	
+	enum integralShift = bitsInFraction;
+	enum numeratorShift = bitsInDenominator;
+	
+	enum integralMask = cast(T)((~(cast(Unsigned!IntegralPartType)0))) << integralShift;
+	enum numeratorMask = cast(T)((~(cast(FractionsPartType)0))) << numeratorShift;
+	enum denominatorMask = cast(T)(~(cast(FractionsPartType)0));
+	
+	enum nanRepresentation = cast(T)0;
+	enum posInfRepresentation = cast(T)(cast(IntegralPartType)+1) << integralShift | cast(T)(cast(FractionsPartType)1) << numeratorShift;
+	enum negInfRepresentation = cast(T)(cast(IntegralPartType)-1) << integralShift | cast(T)(cast(FractionsPartType)1) << numeratorShift;
+	enum zeroRepresentation = cast(T)(cast(FractionsPartType)1);
+	enum maxRepresentation = cast(T)(IntegralPartType.max) << integralShift | cast(T)(FractionsPartType.max-1) << numeratorShift | cast(T)(FractionsPartType.max);
+	enum minRepresentation = cast(T)(IntegralPartType.min) << integralShift | cast(T)(FractionsPartType.max-1) << numeratorShift | cast(T)(FractionsPartType.max);
+}
+
+unittest
+{
+	import std.stdio;
+	writefln("deuclid.integralMask    = %016X", deuclid.integralMask);
+	writefln("deuclid.numeratorMask   = %016X", deuclid.numeratorMask);
+	writefln("deuclid.denominatorMask = %016X", deuclid.denominatorMask);
+	writefln("seuclid.integralMask    = %08X", seuclid.integralMask);
+	writefln("seuclid.numeratorMask   = %08X", seuclid.numeratorMask);
+	writefln("seuclid.denominatorMask = %08X", seuclid.denominatorMask);
+	writeln();
+	writefln("deuclid.nanRep = %016X,\t%s", deuclid.nan.representation, deuclid.nan);
+	writefln("deuclid.posInf = %016X,\t%s", deuclid.infinity.representation, deuclid.infinity);
+	writefln("deuclid.negInf = %016X,\t%s", deuclid.negInfinity.representation, deuclid.negInfinity);
+	writefln("deuclid.zero   = %016X,\t%s", deuclid.zero.representation, deuclid.zero);
+	writefln("deuclid.max    = %016X,\t%s", deuclid.max.representation, deuclid.max);
+	writefln("deuclid.min    = %016X,\t%s", deuclid.min.representation, deuclid.min);
+	writefln("seuclid.nanRep = %08X,\t%s", seuclid.nanRepresentation, seuclid.nan);
+	writefln("seuclid.posInf = %08X,\t%s", seuclid.posInfRepresentation, seuclid.infinity);
+	writefln("seuclid.negInf = %08X,\t%s", seuclid.negInfRepresentation, seuclid.negInfinity);
+	writefln("seuclid.zero   = %08X,\t%s", seuclid.zeroRepresentation, seuclid.zero);
+	writefln("seuclid.max    = %08X,\t%s", seuclid.maxRepresentation, seuclid.max);
+	writefln("seuclid.min    = %08X,\t%s", seuclid.minRepresentation, seuclid.min);
+}
+
+template Halfbytes(T)
+	if(isIntegral!T && T.sizeof >= 2)
+{
+	static if(is(T == ulong))
+		alias uint Halfbytes;
+	else static if(is(T == uint))
+		alias ushort Halfbytes;
+	else static if(is(T == ushort))
+		alias ubyte Halfbytes;
+	else static if(is(T == long))
+		alias int Halfbytes;
+	else static if(is(T == int))
+		alias short Halfbytes;
+	else static if(is(T == short))
+		alias byte Halfbytes;
+}
+
+unittest
+{
+	assert(is(Halfbytes!ulong == uint));
+	assert(is(Halfbytes!uint == ushort));
+	assert(is(Halfbytes!ushort == ubyte));
+	assert(is(Halfbytes!long == int));
+	assert(is(Halfbytes!int == short));
+	assert(is(Halfbytes!short == byte));
+}
+
+template Quarterbytes(T)
+	if(isIntegral!T && T.sizeof >= 4)
+{
+	static if(is(T == ulong))
+		alias ushort Quarterbytes;
+	else static if(is(T == uint))
+		alias ubyte Quarterbytes;
+	else static if(is(T == long))
+		alias short Quarterbytes;
+	else static if(is(T == int))
+		alias byte Quarterbytes;
+}
+
+unittest
+{
+	assert(is(Quarterbytes!ulong == ushort));
+	assert(is(Quarterbytes!uint == ubyte));
+	assert(is(Quarterbytes!long == short));
+	assert(is(Quarterbytes!int == byte));
+}

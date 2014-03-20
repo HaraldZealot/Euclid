@@ -129,7 +129,7 @@ struct ChainFraction(T)
 	}
 	else{
 	    numerator_ = cast(Unsigned!T)P;
-	    denominanator_ = cast(Unsigned!T)Q;
+	    denominanator_ = cast(Unsigned!T)Q;//cast(Unsigned!T)1;??
 	}
 	/*
 	writeln("pPre ", pPre);

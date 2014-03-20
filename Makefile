@@ -1,7 +1,7 @@
 #Makefile for Euclid project
 NAME = Euclid
 TARGET = debug
-SOURCES = main.d
+SOURCES = main.d euclidnumber.d
 OBJECTS = $(OBJDIR)/$(SOURCES:.d=.o)
 UNITTESTS = unittests/$(SOURCES:.d=.ut)
 BINDIR = bin/$(TARGET)
@@ -21,11 +21,12 @@ run: $(BINDIR)/$(NAME)
 unittests: $(UNITTESTS)
 	./$<
 
-unittests/%.ut: %.d
-	$(DC) -unittest -od=obj/unittest -oq -of=$@ $<
+unittests/%.ut:  %.d
+	$(DC) -unittest -main -od=obj/unittest -of=$@ $<
+	rm obj/unittest/*
 
 $(OBJDIR)/%.o: %.d
 	$(DC) $(DFLAGS)  -c $<
 
 clean:
-	rm -rf obj/ bin/
+	rm -rf obj/ bin/ unittests/
