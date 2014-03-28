@@ -4,10 +4,13 @@ private
 {
 	import std.traits;
 	import std.conv;
+
 }
 
-alias Euclidnumber!ulong deuclid;
-alias Euclidnumber!uint seuclid;
+alias to = std.conv.to;
+
+alias deuclid = Euclidnumber!ulong;
+alias seuclid = Euclidnumber!uint;
 
 struct Euclidnumber(T)
 	if(is(T == ulong) || is(T == uint))
@@ -18,8 +21,8 @@ public:
 	/** Default assign operator */
 	
 	/** Aliases for frequent type */
-	alias Signed!(Halfbytes!T) IntegralPartType;
-	alias Quarterbytes!T FractionsPartType;
+	alias IntegralPartType = Signed!(Halfbytes!T) ;
+	alias FractionsPartType = Quarterbytes!T ;
 	
 	/** Not a number represents as 0:0/0 */
 	static @property Euclidnumber!T nan() pure nothrow @safe
@@ -119,6 +122,17 @@ private:
 	enum minRepresentation = cast(T)(IntegralPartType.min) << integralShift | cast(T)(FractionsPartType.max-1) << numeratorShift | cast(T)(FractionsPartType.max);
 }
 
+string to(S,F)(F eucnumber)
+	if(is(S == string) && (is(F == seuclid) || is(F == deuclid)))
+{
+	return cast(S)eucnumber.toString();
+}
+
+unittest
+{
+	assert("nan" == to!string(deuclid.nan));
+}
+
 unittest
 {
 	import std.stdio;
@@ -147,17 +161,17 @@ template Halfbytes(T)
 	if(isIntegral!T && T.sizeof >= 2)
 {
 	static if(is(T == ulong))
-		alias uint Halfbytes;
+		alias Halfbytes = uint ;
 	else static if(is(T == uint))
-		alias ushort Halfbytes;
+		alias Halfbytes = ushort;
 	else static if(is(T == ushort))
-		alias ubyte Halfbytes;
+		alias Halfbytes = ubyte;
 	else static if(is(T == long))
-		alias int Halfbytes;
+		alias Halfbytes = int;
 	else static if(is(T == int))
-		alias short Halfbytes;
+		alias Halfbytes = short;
 	else static if(is(T == short))
-		alias byte Halfbytes;
+		alias Halfbytes = byte;
 }
 
 unittest
@@ -174,13 +188,13 @@ template Quarterbytes(T)
 	if(isIntegral!T && T.sizeof >= 4)
 {
 	static if(is(T == ulong))
-		alias ushort Quarterbytes;
+		alias Quarterbytes = ushort;
 	else static if(is(T == uint))
-		alias ubyte Quarterbytes;
+		alias Quarterbytes = ubyte;
 	else static if(is(T == long))
-		alias short Quarterbytes;
+		alias Quarterbytes = short;
 	else static if(is(T == int))
-		alias byte Quarterbytes;
+		alias Quarterbytes = byte;
 }
 
 unittest
