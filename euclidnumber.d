@@ -122,12 +122,6 @@ private:
 	enum minRepresentation = cast(T)(IntegralPartType.min) << integralShift | cast(T)(FractionsPartType.max-1) << numeratorShift | cast(T)(FractionsPartType.max);
 }
 
-string to(S,F)(F eucnumber)
-	if(is(S == string) && (is(F == seuclid) || is(F == deuclid)))
-{
-	return cast(S)eucnumber.toString();
-}
-
 unittest
 {
 	assert("nan" == to!string(deuclid.nan));
