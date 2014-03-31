@@ -7,8 +7,6 @@ private
 
 }
 
-alias to = std.conv.to;
-
 alias deuclid = Euclidnumber!ulong;
 alias seuclid = Euclidnumber!uint;
 
@@ -65,8 +63,7 @@ public:
 		this.representation = representation;
 	}
 	
-	/*this(U)(U integral)
-		if(isIntegral!U)
+	this(long integral)
 	{
 		if(integral > IntegralPartType.max)
 			representation = posInfRepresentation;
@@ -76,7 +73,7 @@ public:
 		{
 			representation = cast(T)(cast(IntegralPartType)integral) << integralShift | zeroRepresentation;
 		}		
-	}*/
+	}
 	
 	string toString() const
 	{
@@ -124,7 +121,21 @@ private:
 
 unittest
 {
+	//Testing toString and std.conv.to with Euclidnumber
 	assert("nan" == to!string(deuclid.nan));
+	assert("nan" == to!dstring(seuclid.nan));
+	assert("-inf" == to!wstring(deuclid.negInfinity));
+	assert("+inf" == to!string(seuclid.infinity));
+	assert("0" == to!string(seuclid.zero));
+	assert("0" == to!string(deuclid.zero));
+	assert("1" == to!string(deuclid(1)));
+	assert("-1" == to!string(deuclid(-1)));
+	assert("-345" == to!string(deuclid(-345)));
+	assert("19873" == to!string(deuclid(19873)));
+	assert("+inf" == to!string(seuclid(48347)));
+	assert("48347" == to!string(deuclid(48347)));
+	assert("-inf" == to!string(seuclid(-48347)));
+	assert("-48347" == to!string(deuclid(-48347)));
 }
 
 unittest
