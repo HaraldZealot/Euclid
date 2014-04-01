@@ -121,13 +121,19 @@ private:
 
 unittest
 {
-	//Testing toString and std.conv.to with Euclidnumber
+	// Testing toString and std.conv.to with Euclidnumber
+	// Testing predefined value and integral constructor
 	assert("nan" == to!string(deuclid.nan));
 	assert("nan" == to!dstring(seuclid.nan));
 	assert("-inf" == to!wstring(deuclid.negInfinity));
 	assert("+inf" == to!string(seuclid.infinity));
 	assert("0" == to!string(seuclid.zero));
 	assert("0" == to!string(deuclid.zero));
+	assert("32767:254/255" == to!string(seuclid.max));
+	assert("-32768:254/255" == to!string(seuclid.min));
+	assert("2147483647:65534/65535" == to!string(deuclid.max));
+	assert("-2147483648:65534/65535" == to!string(deuclid.min));
+	assert("0" == to!string(seuclid(0)));
 	assert("1" == to!string(deuclid(1)));
 	assert("-1" == to!string(deuclid(-1)));
 	assert("-345" == to!string(deuclid(-345)));
@@ -136,9 +142,17 @@ unittest
 	assert("48347" == to!string(deuclid(48347)));
 	assert("-inf" == to!string(seuclid(-48347)));
 	assert("-48347" == to!string(deuclid(-48347)));
+	assert("32767" == to!string(seuclid(32767)));
+	assert("+inf" == to!string(seuclid(32768)));
+	assert("-32768" == to!string(seuclid(-32768)));
+	assert("-inf" == to!string(seuclid(-32769)));
+	assert("2147483647" == to!string(deuclid(2147483647)));
+	assert("+inf" == to!string(deuclid(2147483648)));
+	assert("-2147483648" == to!string(deuclid(-2147483648)));
+	assert("-inf" == to!string(deuclid(-2147483649)));
 }
 
-unittest
+/*unittest
 {
 	import std.stdio;
 	writefln("deuclid.integralMask    = %016X", deuclid.integralMask);
@@ -160,7 +174,7 @@ unittest
 	writefln("seuclid.zero   = %08X,\t%s", seuclid.zeroRepresentation, seuclid.zero);
 	writefln("seuclid.max    = %08X,\t%s", seuclid.maxRepresentation, seuclid.max);
 	writefln("seuclid.min    = %08X,\t%s", seuclid.minRepresentation, seuclid.min);
-}
+}*/
 
 template Halfbytes(T)
 	if(isIntegral!T && T.sizeof >= 2)
