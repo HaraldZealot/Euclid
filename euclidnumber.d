@@ -63,7 +63,7 @@ public:
 		this.representation = representation;
 	}
 	
-	this(long integral)
+	this(long integral) pure nothrow @safe
 	{
 		if(integral > IntegralPartType.max)
 			representation = posInfRepresentation;
@@ -175,6 +175,37 @@ unittest
 	writefln("seuclid.max    = %08X,\t%s", seuclid.maxRepresentation, seuclid.max);
 	writefln("seuclid.min    = %08X,\t%s", seuclid.minRepresentation, seuclid.min);
 }*/
+
+private void aproximateByEuclid(out ulong integral, ref ulong numerator, ref ulong denominator, ulong[] ) pure nothrow @safe
+{
+	integral = numerator / denominator;
+	numerator = numerator % denominator;
+	if(numerator)
+	{
+		auto decomposedNumerator = numerator;
+		auto decomposedDenominator = denominator;
+
+		typeof(numerator) previousNumerator = 1, currentNumerator = 0;
+		typeof(denominator) previousDenominator = 0, currentDenominator = 1;
+
+		typeof(integral) quotient = 0;
+		auto remainder = numerator;
+
+		while(remainder)
+		{
+			auto temp = quotient * currentNumerator + previousNumerator;
+			previousNumerator = currentNumerator;
+			currentNumerator = temp;
+
+			auto temp = quotient * currentNumerator + previousNumerator;
+			previousNumerator = currentNumerator;
+			currentNumerator = temp;
+			
+		}
+	}
+	else
+		denominator = 1;
+}
 
 template Halfbytes(T)
 	if(isIntegral!T && T.sizeof >= 2)
