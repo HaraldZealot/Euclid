@@ -106,6 +106,16 @@ public:
 	
 private:
 	T representation;
+
+	invariant()
+	{
+		assert(
+			representation == nanRepresentation ||
+			representation == posInfRepresentation ||
+			representation == negInfRepresentation ||
+			((representation & numeratorMask) >>> numeratorShift) < (representation & denominatorMask)
+		);
+	}
 	
 	enum bitsInByte = 8;
 	enum bitsInDenominator = FractionsPartType.sizeof * bitsInByte;
