@@ -67,7 +67,7 @@ public:
 	{
 		if(integral > IntegralPartType.max)
 			representation = posInfRepresentation;
-		else if(integral < IntegralPartType.min)
+		else if(integral < -IntegralPartType.max)
 			representation = negInfRepresentation;
 		else 
 		{
@@ -83,13 +83,22 @@ public:
 			return "+inf";
 		else if(representation == negInfRepresentation)
 			return "-inf";
+		else if(representation == negZeroRepresentation)
+			return "0";
 		
-		auto result = to!string(cast(Signed!T)(representation & integralMask) >> integralShift); // N.B! arithmetical integralShift
-		if(representation & numeratorMask)
+		string result;
+		T positiveRepresentation = representation;
+		if(representation & signMask)
+		{
+			result ~= "-";
+			positiveRepresentation = negateIntegralPart(positiveRepresentation);
+		}
+		result ~= to!string(cast(Signed!T)(positiveRepresentation & integralMask) >> integralShift); // N.B! arithmetical integralShift
+		if(positiveRepresentation & numeratorMask)
 		{
 			result ~= ":";
-			result ~= to!string((representation & numeratorMask) >>> numeratorShift) ~ "/"; // N.B! logical shift
-			result ~= to!string(representation & denominatorMask);
+			result ~= to!string((positiveRepresentation & numeratorMask) >>> numeratorShift) ~ "/"; // N.B! logical shift
+			result ~= to!string(positiveRepresentation & denominatorMask);
 		}
 		
 		return result;
@@ -106,17 +115,28 @@ private:
 	
 	enum integralShift = bitsInFraction;
 	enum numeratorShift = bitsInDenominator;
+	enum signShift = T.sizeof * bitsInByte - 1;
 	
 	enum integralMask = cast(T)((~(cast(Unsigned!IntegralPartType)0))) << integralShift;
 	enum numeratorMask = cast(T)((~(cast(FractionsPartType)0))) << numeratorShift;
 	enum denominatorMask = cast(T)(~(cast(FractionsPartType)0));
+	enum signMask = (cast(T)1) << signShift;
 	
 	enum nanRepresentation = cast(T)0;
 	enum posInfRepresentation = cast(T)(cast(IntegralPartType)+1) << integralShift | cast(T)(cast(FractionsPartType)1) << numeratorShift;
 	enum negInfRepresentation = cast(T)(cast(IntegralPartType)-1) << integralShift | cast(T)(cast(FractionsPartType)1) << numeratorShift;
 	enum zeroRepresentation = cast(T)(cast(FractionsPartType)1);
+	enum negZeroRepresentation = signMask | zeroRepresentation;
 	enum maxRepresentation = cast(T)(IntegralPartType.max) << integralShift | cast(T)(FractionsPartType.max-1) << numeratorShift | cast(T)(FractionsPartType.max);
-	enum minRepresentation = cast(T)(IntegralPartType.min) << integralShift | cast(T)(FractionsPartType.max-1) << numeratorShift | cast(T)(FractionsPartType.max);
+	enum minRepresentation = cast(T)(-IntegralPartType.max) << integralShift | cast(T)(FractionsPartType.max-1) << numeratorShift | cast(T)(FractionsPartType.max);
+
+	static T negateIntegralPart(T representation)pure nothrow @safe
+	{
+		if((representation & integralMask) == signMask)
+			return representation ^ signMask;
+		else
+			return -(representation & integralMask) | (representation & ~integralMask);
+	}
 }
 
 unittest
@@ -130,9 +150,9 @@ unittest
 	assert("0" == to!string(seuclid.zero));
 	assert("0" == to!string(deuclid.zero));
 	assert("32767:254/255" == to!string(seuclid.max));
-	assert("-32768:254/255" == to!string(seuclid.min));
+	assert("-32767:254/255" == to!string(seuclid.min));
 	assert("2147483647:65534/65535" == to!string(deuclid.max));
-	assert("-2147483648:65534/65535" == to!string(deuclid.min));
+	assert("-2147483647:65534/65535" == to!string(deuclid.min));
 	assert("0" == to!string(seuclid(0)));
 	assert("1" == to!string(deuclid(1)));
 	assert("-1" == to!string(deuclid(-1)));
@@ -144,15 +164,15 @@ unittest
 	assert("-48347" == to!string(deuclid(-48347)));
 	assert("32767" == to!string(seuclid(32767)));
 	assert("+inf" == to!string(seuclid(32768)));
-	assert("-32768" == to!string(seuclid(-32768)));
-	assert("-inf" == to!string(seuclid(-32769)));
+	assert("-32767" == to!string(seuclid(-32767)));
+	assert("-inf" == to!string(seuclid(-32768)));
 	assert("2147483647" == to!string(deuclid(2147483647)));
 	assert("+inf" == to!string(deuclid(2147483648)));
-	assert("-2147483648" == to!string(deuclid(-2147483648)));
-	assert("-inf" == to!string(deuclid(-2147483649)));
+	assert("-2147483647" == to!string(deuclid(-2147483647)));
+	assert("-inf" == to!string(deuclid(-2147483648)));
 }
-
-/*unittest
+//*
+unittest
 {
 	import std.stdio;
 	writefln("deuclid.integralMask    = %016X", deuclid.integralMask);
@@ -174,7 +194,7 @@ unittest
 	writefln("seuclid.zero   = %08X,\t%s", seuclid.zeroRepresentation, seuclid.zero);
 	writefln("seuclid.max    = %08X,\t%s", seuclid.maxRepresentation, seuclid.max);
 	writefln("seuclid.min    = %08X,\t%s", seuclid.minRepresentation, seuclid.min);
-}*/
+}//*/
 
 private void aproximateByEuclid(out ulong integral, ref ulong numerator, ref ulong denominator, ulong[] ) pure nothrow @safe
 {
@@ -193,10 +213,6 @@ private void aproximateByEuclid(out ulong integral, ref ulong numerator, ref ulo
 
 		while(remainder)
 		{
-			auto temp = quotient * currentNumerator + previousNumerator;
-			previousNumerator = currentNumerator;
-			currentNumerator = temp;
-
 			auto temp = quotient * currentNumerator + previousNumerator;
 			previousNumerator = currentNumerator;
 			currentNumerator = temp;
