@@ -181,7 +181,7 @@ unittest
 	assert("-2147483647" == to!string(deuclid(-2147483647)));
 	assert("-inf" == to!string(deuclid(-2147483648)));
 }
-//*
+/*
 unittest
 {
 	import std.stdio;
@@ -206,31 +206,56 @@ unittest
 	writefln("seuclid.min    = %08X,\t%s", seuclid.minRepresentation, seuclid.min);
 }//*/
 
-private void aproximateByEuclid(out ulong integral, ref ulong numerator, ref ulong denominator, ulong[] ) pure nothrow @safe
+private void aproximateByEuclid(out ulong integral, ref ulong numerator, ref ulong denominator, ulong[] ) //pure nothrow @safe
 {
+	import std.stdio;
+	typeof(numerator) previousNumerator = 1, currentNumerator = 0;
+	typeof(denominator) previousDenominator = 0, currentDenominator = 1;
 	integral = numerator / denominator;
-	numerator = numerator % denominator;
-	if(numerator)
+	auto decomposedNumerator = numerator % denominator;
+	auto decomposedDenominator = denominator;
+	typeof(integral) quotient = 0;
+	auto remainder = decomposedNumerator;
+
+	writeln("pnum = ", previousNumerator, " cnum = ", currentNumerator);
+	writeln("pden = ", previousDenominator, " cden = ", currentDenominator);
+	writeln("dnum = ", decomposedNumerator, " dden = ", decomposedDenominator);
+	writeln("quot = ", quotient, " remd = ", remainder);
+	writeln();
+
+	while(remainder)
 	{
-		auto decomposedNumerator = numerator;
-		auto decomposedDenominator = denominator;
+		quotient = decomposedDenominator / decomposedNumerator;
+		remainder = decomposedDenominator % decomposedNumerator;
+		decomposedDenominator = decomposedNumerator;
+		decomposedNumerator = remainder;
 
-		typeof(numerator) previousNumerator = 1, currentNumerator = 0;
-		typeof(denominator) previousDenominator = 0, currentDenominator = 1;
+		auto temp = quotient * currentNumerator + previousNumerator;
+		previousNumerator = currentNumerator;
+		currentNumerator = temp;
 
-		typeof(integral) quotient = 0;
-		auto remainder = numerator;
+		temp = quotient * currentDenominator + previousDenominator;
+		previousDenominator = currentDenominator;
+		currentDenominator = temp;
 
-		while(remainder)
-		{
-			auto temp = quotient * currentNumerator + previousNumerator;
-			previousNumerator = currentNumerator;
-			currentNumerator = temp;
-			
-		}
+		writeln("pnum = ", previousNumerator, " cnum = ", currentNumerator);
+		writeln("pden = ", previousDenominator, " cden = ", currentDenominator);
+		writeln("dnum = ", decomposedNumerator, " dden = ", decomposedDenominator);
+		writeln("quot = ", quotient, " remd = ", remainder);
+		writeln();
 	}
-	else
-		denominator = 1;
+
+	numerator = currentNumerator;
+	denominator = currentDenominator;
+}
+
+unittest
+{
+	import std.stdio;
+	ulong a, b=34,c=21;
+
+	aproximateByEuclid(a, b, c, null);
+	writeln(a,":",b,"/",c);
 }
 
 template Halfbytes(T)
