@@ -181,6 +181,7 @@ unittest
 	assert("-2147483647" == to!string(deuclid(-2147483647)));
 	assert("-inf" == to!string(deuclid(-2147483648)));
 }
+
 /*
 unittest
 {
@@ -206,9 +207,8 @@ unittest
 	writefln("seuclid.min    = %08X,\t%s", seuclid.minRepresentation, seuclid.min);
 }//*/
 
-private void aproximateByEuclid(out ulong integral, ref ulong numerator, ref ulong denominator, ulong[] ) //pure nothrow @safe
+private void approximateByEuclid(out ulong integral, ref ulong numerator, ref ulong denominator, ulong limit) pure nothrow @safe
 {
-	import std.stdio;
 	typeof(numerator) previousNumerator = 1, currentNumerator = 0;
 	typeof(denominator) previousDenominator = 0, currentDenominator = 1;
 	integral = numerator / denominator;
@@ -217,13 +217,7 @@ private void aproximateByEuclid(out ulong integral, ref ulong numerator, ref ulo
 	typeof(integral) quotient = 0;
 	auto remainder = decomposedNumerator;
 
-	writeln("pnum = ", previousNumerator, " cnum = ", currentNumerator);
-	writeln("pden = ", previousDenominator, " cden = ", currentDenominator);
-	writeln("dnum = ", decomposedNumerator, " dden = ", decomposedDenominator);
-	writeln("quot = ", quotient, " remd = ", remainder);
-	writeln();
-
-	while(remainder)
+	while(remainder && currentDenominator <= limit)
 	{
 		quotient = decomposedDenominator / decomposedNumerator;
 		remainder = decomposedDenominator % decomposedNumerator;
@@ -237,25 +231,36 @@ private void aproximateByEuclid(out ulong integral, ref ulong numerator, ref ulo
 		temp = quotient * currentDenominator + previousDenominator;
 		previousDenominator = currentDenominator;
 		currentDenominator = temp;
-
-		writeln("pnum = ", previousNumerator, " cnum = ", currentNumerator);
-		writeln("pden = ", previousDenominator, " cden = ", currentDenominator);
-		writeln("dnum = ", decomposedNumerator, " dden = ", decomposedDenominator);
-		writeln("quot = ", quotient, " remd = ", remainder);
-		writeln();
 	}
 
-	numerator = currentNumerator;
-	denominator = currentDenominator;
+	if(currentDenominator <= limit)
+	{
+		numerator = currentNumerator;
+		denominator = currentDenominator;
+	}
+	else
+	{
+		numerator = previousNumerator;
+		denominator = previousDenominator;
+	}
 }
 
 unittest
 {
-	import std.stdio;
-	ulong a, b=34,c=21;
+	// Testing euclidian approximation
+	ulong a, b, c;
 
-	aproximateByEuclid(a, b, c, null);
-	writeln(a,":",b,"/",c);
+	b = 13;c = 27;
+	approximateByEuclid(a, b, c, 255);
+	assert(a == 0 && b == 13 && c == 27);
+
+	b = 27;c = 13;
+	approximateByEuclid(a, b, c, 255);
+	assert(a == 2 && b == 1 && c == 13);
+
+	b = 130;c = 269;
+	approximateByEuclid(a, b, c, 255);
+	assert(a == 0 && b == 29 && c == 60);
 }
 
 template Halfbytes(T)
@@ -277,6 +282,7 @@ template Halfbytes(T)
 
 unittest
 {
+	// Testing Halfbytes!T
 	assert(is(Halfbytes!ulong == uint));
 	assert(is(Halfbytes!uint == ushort));
 	assert(is(Halfbytes!ushort == ubyte));
@@ -300,6 +306,7 @@ template Quarterbytes(T)
 
 unittest
 {
+	// Testing Quarterbytes!T
 	assert(is(Quarterbytes!ulong == ushort));
 	assert(is(Quarterbytes!uint == ubyte));
 	assert(is(Quarterbytes!long == short));
