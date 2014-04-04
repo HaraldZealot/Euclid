@@ -63,16 +63,43 @@ public:
 		this.representation = representation;
 	}
 	
+	/** Integral cunstructor */
 	this(long integral) pure nothrow @safe
 	{
 		if(integral > IntegralPartType.max)
 			representation = posInfRepresentation;
 		else if(integral < -IntegralPartType.max)
 			representation = negInfRepresentation;
-		else 
+		else
 		{
 			representation = cast(T)(cast(IntegralPartType)integral) << integralShift | zeroRepresentation;
-		}		
+		}
+	}
+
+	/** Rational cunstructor */
+	this(IntegralPartType integral, FractionsPartType numerator, FractionsPartType denominator)
+	{
+		bool signed = false;
+		if(integral < 0)
+		{
+			integral = -integral;
+			signed = true;
+		}
+		ulong regIntegral = integral, regNumerator = numerator, regDenominator = denominator;
+
+
+		regNumerator += regIntegral * regDenominator;
+		approximateByEuclid(regIntegral, regNumerator, regDenominator, FractionsPartType.max);
+
+		if(regIntegral > cast(ulong)IntegralPartType.max)
+			representation = posInfRepresentation;
+		else
+		{
+			representation = (cast(T)regIntegral << integralShift) | (cast(T)regNumerator << numeratorShift) | cast(T)regDenominator;
+		}
+
+		if(signed)
+			representation = negateIntegralPart(representation);
 	}
 	
 	string toString() const
@@ -147,6 +174,20 @@ private:
 		else
 			return -(representation & integralMask) | (representation & ~integralMask);
 	}
+}
+
+unittest
+{
+	// Testing constructors
+	assert(0x0013_0D_11 == seuclid(0x13, 0xD, 0x11).representation);
+	assert(0xFFED_0D_11 == seuclid(-0x13, 0xD, 0x11).representation);
+	assert(0x00000013_000D_0011 == deuclid(0x13, 0xD, 0x11).representation);
+	assert(0xFFFFFFED_000D_0011 == deuclid(-0x13, 0xD, 0x11).representation);
+
+	assert(0x01F3_00_01 == seuclid(0x1f3).representation);
+	assert(0xFE0D_00_01 == seuclid(-0x1f3).representation);
+	assert(0x000001F3_0000_0001 == deuclid(0x1f3).representation);
+	assert(0xffffFE0D_0000_0001 == deuclid(-0x1f3).representation);
 }
 
 unittest
