@@ -63,7 +63,7 @@ public:
 		this.representation = representation;
 	}
 	
-	/** Integral cunstructor */
+	/** Integral constructor */
 	this(long integral) pure nothrow @safe
 	{
 		if(integral > IntegralPartType.max)
@@ -76,7 +76,7 @@ public:
 		}
 	}
 
-	/** Rational cunstructor */
+	/** Rational constructor */
 	this(IntegralPartType integral, FractionsPartType numerator, FractionsPartType denominator)
 	{
 		bool signed = false;
