@@ -4,6 +4,7 @@ private
 {
 	import std.traits;
 	import std.conv;
+	import std.math;
 
 }
 
@@ -101,7 +102,54 @@ public:
 		if(signed)
 			representation = negateIntegralPart(representation);
 	}
-	
+
+	/** Floating point constructor */
+	this(real floatingNumber)
+	{
+		import std.stdio;
+		int expn;
+		auto mantissa = frexp(floatingNumber, expn);
+		bool signed = false;
+		if(mantissa < 0)
+		{
+			mantissa = -mantissa;
+			signed = true;
+		}
+		ulong mnt = cast(ulong) ldexp(mantissa,64);
+		writefln("mnt = %.20a", mantissa);
+		writefln("mnt =    %x",mnt);
+		writeln("exp = ", expn);
+		mnt>>=1;
+
+		ulong base = 1UL << 63;
+		if(expn>0)
+			base>>=expn;
+		else if(expn<0)
+			mnt>>=-expn;
+
+
+		writefln("mnt =    %x",mnt);
+		writefln("bas =    %x",base);
+
+
+		ulong regIntegral, regNumerator = mnt, regDenominator = base;
+
+
+		approximateByEuclid(regIntegral, regNumerator, regDenominator, FractionsPartType.max);
+
+		if(regIntegral > cast(ulong)IntegralPartType.max)
+			representation = posInfRepresentation;
+		else
+		{
+			representation = (cast(T)regIntegral << integralShift) | (cast(T)regNumerator << numeratorShift) | cast(T)regDenominator;
+		}
+
+		if(signed)
+			representation = negateIntegralPart(representation);
+
+		writefln("\n%016x",representation);
+	}
+
 	string toString() const
 	{
 		if(representation == nanRepresentation)
@@ -158,6 +206,7 @@ private:
 	enum numeratorMask = cast(T)((~(cast(FractionsPartType)0))) << numeratorShift;
 	enum denominatorMask = cast(T)(~(cast(FractionsPartType)0));
 	enum signMask = (cast(T)1) << signShift;
+	enum zeroIntegralMask = signMask ^ integralMask;
 	
 	enum nanRepresentation = cast(T)0;
 	enum posInfRepresentation = cast(T)(cast(IntegralPartType)+1) << integralShift | cast(T)(cast(FractionsPartType)1) << numeratorShift;
@@ -169,7 +218,7 @@ private:
 
 	static T negateIntegralPart(T representation)pure nothrow @safe
 	{
-		if((representation & integralMask) == signMask)
+		if(!(representation & zeroIntegralMask))
 			return representation ^ signMask;
 		else
 			return -(representation & integralMask) | (representation & ~integralMask);
@@ -188,6 +237,9 @@ unittest
 	assert(0xFE0D_00_01 == seuclid(-0x1f3).representation);
 	assert(0x000001F3_0000_0001 == deuclid(0x1f3).representation);
 	assert(0xffffFE0D_0000_0001 == deuclid(-0x1f3).representation);
+
+	import std.stdio;
+	writeln(deuclid(-1.0L/30024.0L));
 }
 
 unittest
