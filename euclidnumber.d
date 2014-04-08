@@ -21,7 +21,7 @@ public:
 	
 	/** Aliases for frequent type */
 	alias IntegralPartType = Signed!(Halfbytes!T) ;
-	alias FractionsPartType = Quarterbytes!T ;
+	alias FractionPartsType = Quarterbytes!T ;
 	
 	/** Not a number represents as 0:0/0 */
 	static @property Euclidnumber!T nan() pure nothrow @safe
@@ -78,7 +78,7 @@ public:
 	}
 
 	/** Rational constructor */
-	this(IntegralPartType integral, FractionsPartType numerator, FractionsPartType denominator)
+	this(IntegralPartType integral, FractionPartsType numerator, FractionPartsType denominator)
 	{
 		bool signed = false;
 		if(integral < 0)
@@ -90,7 +90,7 @@ public:
 
 
 		regNumerator += regIntegral * regDenominator;
-		approximateByEuclid(regIntegral, regNumerator, regDenominator, FractionsPartType.max);
+		approximateByEuclid(regIntegral, regNumerator, regDenominator, FractionPartsType.max);
 
 		if(regIntegral > cast(ulong)IntegralPartType.max)
 			representation = posInfRepresentation;
@@ -116,9 +116,6 @@ public:
 			signed = true;
 		}
 		ulong mnt = cast(ulong) ldexp(mantissa,64);
-		writefln("mnt = %.20a", mantissa);
-		writefln("mnt =    %x",mnt);
-		writeln("exp = ", expn);
 		mnt>>=1;
 
 		ulong base = 1UL << 63;
@@ -127,15 +124,8 @@ public:
 		else if(expn<0)
 			mnt>>=-expn;
 
-
-		writefln("mnt =    %x",mnt);
-		writefln("bas =    %x",base);
-
-
 		ulong regIntegral, regNumerator = mnt, regDenominator = base;
-
-
-		approximateByEuclid(regIntegral, regNumerator, regDenominator, FractionsPartType.max);
+		approximateByEuclid(regIntegral, regNumerator, regDenominator, FractionPartsType.max);
 
 		if(regIntegral > cast(ulong)IntegralPartType.max)
 			representation = posInfRepresentation;
@@ -150,6 +140,21 @@ public:
 		writefln("\n%016x",representation);
 	}
 
+	/** Unary plus */
+	Euclidnumber!T opUnary(string op)()
+		if(op == "+")
+	{
+		return this;
+	}
+
+	/** Unary minus */
+	Euclidnumber!T opUnary(string op)()
+		if(op == "-")
+	{
+		return Euclidnumber!T(0,negateIntegralPart(representation));
+	}
+
+	/** String representation */
 	string toString() const
 	{
 		if(representation == nanRepresentation)
@@ -193,8 +198,8 @@ private:
 	}
 	
 	enum bitsInByte = 8;
-	enum bitsInDenominator = FractionsPartType.sizeof * bitsInByte;
-	enum bitsInNumerator = FractionsPartType.sizeof * bitsInByte;
+	enum bitsInDenominator = FractionPartsType.sizeof * bitsInByte;
+	enum bitsInNumerator = FractionPartsType.sizeof * bitsInByte;
 	enum bitsInFraction = bitsInDenominator + bitsInNumerator;
 	enum bitsInIntegral = IntegralPartType.sizeof * bitsInByte;
 	
@@ -203,18 +208,18 @@ private:
 	enum signShift = T.sizeof * bitsInByte - 1;
 	
 	enum integralMask = cast(T)((~(cast(Unsigned!IntegralPartType)0))) << integralShift;
-	enum numeratorMask = cast(T)((~(cast(FractionsPartType)0))) << numeratorShift;
-	enum denominatorMask = cast(T)(~(cast(FractionsPartType)0));
+	enum numeratorMask = cast(T)((~(cast(FractionPartsType)0))) << numeratorShift;
+	enum denominatorMask = cast(T)(~(cast(FractionPartsType)0));
 	enum signMask = (cast(T)1) << signShift;
 	enum zeroIntegralMask = signMask ^ integralMask;
 	
 	enum nanRepresentation = cast(T)0;
-	enum posInfRepresentation = cast(T)(cast(IntegralPartType)+1) << integralShift | cast(T)(cast(FractionsPartType)1) << numeratorShift;
-	enum negInfRepresentation = cast(T)(cast(IntegralPartType)-1) << integralShift | cast(T)(cast(FractionsPartType)1) << numeratorShift;
-	enum zeroRepresentation = cast(T)(cast(FractionsPartType)1);
+	enum posInfRepresentation = cast(T)(cast(IntegralPartType)+1) << integralShift | cast(T)(cast(FractionPartsType)1) << numeratorShift;
+	enum negInfRepresentation = cast(T)(cast(IntegralPartType)-1) << integralShift | cast(T)(cast(FractionPartsType)1) << numeratorShift;
+	enum zeroRepresentation = cast(T)(cast(FractionPartsType)1);
 	enum negZeroRepresentation = signMask | zeroRepresentation;
-	enum maxRepresentation = cast(T)(IntegralPartType.max) << integralShift | cast(T)(FractionsPartType.max-1) << numeratorShift | cast(T)(FractionsPartType.max);
-	enum minRepresentation = cast(T)(-IntegralPartType.max) << integralShift | cast(T)(FractionsPartType.max-1) << numeratorShift | cast(T)(FractionsPartType.max);
+	enum maxRepresentation = cast(T)(IntegralPartType.max) << integralShift | cast(T)(FractionPartsType.max-1) << numeratorShift | cast(T)(FractionPartsType.max);
+	enum minRepresentation = cast(T)(-IntegralPartType.max) << integralShift | cast(T)(FractionPartsType.max-1) << numeratorShift | cast(T)(FractionPartsType.max);
 
 	static T negateIntegralPart(T representation)pure nothrow @safe
 	{
@@ -239,7 +244,29 @@ unittest
 	assert(0xffffFE0D_0000_0001 == deuclid(-0x1f3).representation);
 
 	import std.stdio;
-	writeln(deuclid(-1.0L/30024.0L));
+	writeln(seuclid(-2.0f/(255.0f*2.0f+1)));
+}
+
+unittest
+{
+	// Testing unary + and -
+	assert(deuclid(35) == +deuclid(35));
+	assert(deuclid(-147) == +deuclid(-147));
+	assert(deuclid(613,25,137) == +deuclid(613,25,137));
+	assert(deuclid(-714,13,139) == +deuclid(-714,13,139));
+	assert(deuclid(0) == +deuclid(0));
+	assert(deuclid.infinity == +deuclid.infinity);
+	assert(deuclid.negInfinity == +deuclid.negInfinity);
+	assert(deuclid.nan == +deuclid.nan);
+
+	assert(deuclid(-35) == -deuclid(35));
+	assert(deuclid(147) == -deuclid(-147));
+	assert(deuclid(-613,25,137) == -deuclid(613,25,137));
+	assert(deuclid(714,13,139) == -deuclid(-714,13,139));
+	assert(deuclid(0) == -deuclid(0));
+	assert(deuclid.negInfinity == -deuclid.infinity);
+	assert(deuclid.infinity == -deuclid.negInfinity);
+	assert(deuclid.nan == -deuclid.nan);
 }
 
 unittest
