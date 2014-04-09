@@ -140,6 +140,36 @@ public:
 		writefln("\n%016x",representation);
 	}
 
+	bool opEquals(ref const Euclidnumber!T rhs) const pure nothrow @safe
+	{
+		alias lhs = this;
+		if(lhs.representation == nanRepresentation || rhs.representation == nanRepresentation)
+			return false;
+		if(lhs.representation == posInfRepresentation || rhs.representation == posInfRepresentation ||
+		      lhs.representation == negInfRepresentation || rhs.representation == negInfRepresentation)
+			return false;
+		if((lhs.representation == zeroRepresentation && rhs.representation == negZeroRepresentation) ||
+		      (lhs.representation == negZeroRepresentation && rhs.representation == zeroRepresentation))
+			return true;
+
+		return lhs.representation == rhs.representation;
+	}
+
+	bool opEquals(Euclidnumber!T rhs) const pure nothrow @safe
+	{
+		alias lhs = this;
+		if(lhs.representation == nanRepresentation || rhs.representation == nanRepresentation)
+			return false;
+		if(lhs.representation == posInfRepresentation || rhs.representation == posInfRepresentation ||
+		      lhs.representation == negInfRepresentation || rhs.representation == negInfRepresentation)
+			return false;
+		if((lhs.representation == zeroRepresentation && rhs.representation == negZeroRepresentation) ||
+		      (lhs.representation == negZeroRepresentation && rhs.representation == zeroRepresentation))
+			return true;
+
+		return lhs.representation == rhs.representation;
+	}
+
 	/** Unary plus */
 	Euclidnumber!T opUnary(string op)()
 		if(op == "+")
@@ -224,7 +254,10 @@ private:
 	static T negateIntegralPart(T representation)pure nothrow @safe
 	{
 		if(!(representation & zeroIntegralMask))
-			return representation ^ signMask;
+			if(representation & numeratorMask)
+				return representation ^ signMask;
+			else
+				return representation;
 		else
 			return -(representation & integralMask) | (representation & ~integralMask);
 	}
@@ -250,23 +283,23 @@ unittest
 unittest
 {
 	// Testing unary + and -
-	assert(deuclid(35) == +deuclid(35));
-	assert(deuclid(-147) == +deuclid(-147));
-	assert(deuclid(613,25,137) == +deuclid(613,25,137));
-	assert(deuclid(-714,13,139) == +deuclid(-714,13,139));
-	assert(deuclid(0) == +deuclid(0));
-	assert(deuclid.infinity == +deuclid.infinity);
-	assert(deuclid.negInfinity == +deuclid.negInfinity);
-	assert(deuclid.nan == +deuclid.nan);
+	assert(deuclid(35).representation == (+deuclid(35)).representation);
+	assert(deuclid(-147).representation == (+deuclid(-147)).representation);
+	assert(deuclid(613,25,137).representation == (+deuclid(613,25,137)).representation);
+	assert(deuclid(-714,13,139).representation == (+deuclid(-714,13,139)).representation);
+	assert(deuclid(0).representation == (+deuclid(0)).representation);
+	assert(deuclid.infinity.representation == (+deuclid.infinity).representation);
+	assert(deuclid.negInfinity.representation == (+deuclid.negInfinity).representation);
+	assert(deuclid.nan.representation == (+deuclid.nan).representation);
 
-	assert(deuclid(-35) == -deuclid(35));
-	assert(deuclid(147) == -deuclid(-147));
-	assert(deuclid(-613,25,137) == -deuclid(613,25,137));
-	assert(deuclid(714,13,139) == -deuclid(-714,13,139));
-	assert(deuclid(0) == -deuclid(0));
-	assert(deuclid.negInfinity == -deuclid.infinity);
-	assert(deuclid.infinity == -deuclid.negInfinity);
-	assert(deuclid.nan == -deuclid.nan);
+	assert(deuclid(-35).representation == (-deuclid(35)).representation);
+	assert(deuclid(147).representation == (-deuclid(-147)).representation);
+	assert(deuclid(-613,25,137).representation == (-deuclid(613,25,137)).representation);
+	assert(deuclid(714,13,139).representation == (-deuclid(-714,13,139)).representation);
+	assert(deuclid(0).representation == (-deuclid(0)).representation);
+	assert(deuclid.negInfinity.representation == (-deuclid.infinity).representation);
+	assert(deuclid.infinity.representation == (-deuclid.negInfinity).representation);
+	assert(deuclid.nan.representation == (-deuclid.nan).representation);
 }
 
 unittest
